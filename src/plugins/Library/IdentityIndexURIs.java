@@ -29,10 +29,15 @@ class IdentityIndexURIs {
 	static final String PRIV_URI_FILENAME = "library.index.privkey"; //Used by CuratorIndexURI
 	static final String PUB_URI_FILENAME = "library.index.pubkey"; //Used by CuratorIndexURI
 
-	IdentityIndexURIs(PluginRespirator pr, File workingDir, String iURI) throws MalformedURLException {
+	IdentityIndexURIs(PluginRespirator pr, File workingDir, String iURI){
 		this.pr = pr;
 		this.workingDir = workingDir;
-		this.suggestedInsertURI = new FreenetURI(iURI);
+		try {
+			this.suggestedInsertURI = new FreenetURI(iURI);
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	synchronized long setEdition(long newEdition) {

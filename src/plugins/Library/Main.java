@@ -192,12 +192,10 @@ public class Main implements FredPlugin, FredPluginVersioned, freenet.pluginmana
 		if("pushBuffer".equals(params.get("command"))){
 			uploader.handlePushBuffer(params, data);
 		} else if("pushBufferCur".equals(params.get("command"))) {		
-			try{
-				uploaderCur = new IdentityIndexUploader(pr, params.get("insertURI"),params.get("hashPubKey")); //TODO replaced by Identity	
-				uploaderCur.start();
+			uploaderCur = new IdentityIndexUploader(pr, params.get("insertURI"),params.get("hashPubKey")); //TODO replaced by Identity	
+			uploaderCur.start();
+			if (data != null) {
 				uploaderCur.handlePushBuffer(data);					
-			} catch (MalformedURLException e) {
-					Logger.error(this, "Malformed URI ", e);
 			}
 		} else if("getSpiderURI".equals(params.get("command"))) {
 			uploader.handleGetSpiderURI(replysender);
