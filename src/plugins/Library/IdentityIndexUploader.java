@@ -64,13 +64,12 @@ public class IdentityIndexUploader {
 	IdentityIndexUploader(PluginRespirator pr, String iURI, String routingKey){
 		this.pr = pr;	
 		try {
-			setParentDir(routingKey);
-			setWorkingDir(iURI.split("/")[1]);
+			setParentDir(routingKey);//parent directory for WoT identity
+			setWorkingDir(iURI.split("/")[1]);//working directory for each category (a different index)
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 		identityIndexURIs = new IdentityIndexURIs(pr, workingDir, iURI);
-		
 	}
 
 	private void setParentDir(String routingKey) throws IOException {

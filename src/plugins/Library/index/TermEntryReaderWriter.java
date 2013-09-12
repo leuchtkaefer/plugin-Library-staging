@@ -43,10 +43,13 @@ public class TermEntryReaderWriter implements ObjectStreamReader<TermEntry>, Obj
 			throw new DataFormatException("Incorrect serialVersionUID", null, svuid);
 		}
 		int type = dis.readInt();
+		System.out.println("TermEntryReaderWriter: type is " + type);
 		String subj = dis.readUTF();
+		System.out.println("TermEntryReaderWriter: subj is " + subj);
 		float rel = dis.readFloat();
 		TermEntry.EntryType[] types = TermEntry.EntryType.values();
 		if (type < 0 || type >= types.length) {
+			System.out.println("TermEntryReaderWriter: type is not correct");
 			throw new DataFormatException("Unrecognised entry type", null, type);
 		}
 		switch (types[type]) {
@@ -69,6 +72,23 @@ public class TermEntryReaderWriter implements ObjectStreamReader<TermEntry>, Obj
 				pos.put(index, "".equals(val) ? null : val);
 			}
 			return new TermPageEntry(subj, rel, page, title, pos);
+		case FILE:
+			FreenetURI file = FreenetURI.readFullBinaryKeyWithLength(dis);
+			String mime = dis.readUTF();
+			int fsize = dis.readInt();
+			String descrip = null;
+			if (fsize < 0) {
+				descrip = dis.readUTF();
+				fsize = ~fsize;
+			}
+			Map<Integer, String> fpos = new HashMap<Integer, String>(fsize<<1);
+			for (int i=0; i<fsize; ++i) {
+				int index = dis.readInt();
+				String val = dis.readUTF();
+				fpos.put(index, "".equals(val) ? null : val);
+			}
+			return new TermFileEntry(subj, rel, file, mime, descrip, fpos);
+			//TermFileEntry(String s, float r, FreenetURI u, String m, String d, Map<Integer, String> p)
 		default:
 			throw new AssertionError();
 		}

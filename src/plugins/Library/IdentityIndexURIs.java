@@ -55,7 +55,8 @@ class IdentityIndexURIs {
 			try {
 				fis = new FileInputStream(f);
 				BufferedReader br = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
-				privURI = new FreenetURI(br.readLine()).setDocName("index.yml"); // Else InsertableClientSSK doesn't like it. MULTIPLE IDENTITIES (+) leuchtkaefer
+				//privURI = new FreenetURI(br.readLine()).setDocName("index.yml"); // Else InsertableClientSSK doesn't like it. MULTIPLE IDENTITIES (+) leuchtkaefer
+				privURI = new FreenetURI(br.readLine()).setDocName(suggestedInsertURI.getDocName());
 				privkey = InsertableClientSSK.create(privURI);
 				System.out.println("Read old privkey");
 				this.pubURI = privkey.getURI();
@@ -68,8 +69,7 @@ class IdentityIndexURIs {
 				Closer.close(fis);
 			}
 
-			if(privURI == null) { //TODO Leuchtkaefer I need to use the privURI passed by Curator
-				
+			if(privURI == null) { //TODO Leuchtkaefer do I need both if?		
 				InsertableClientSSK key;
 				try {
 					key = InsertableClientSSK.create(suggestedInsertURI.sskForUSK());
@@ -79,16 +79,17 @@ class IdentityIndexURIs {
 					System.out.println("Created new keypair, pubkey is "+pubURI);
 				} catch (MalformedURLException e) {
 					e.printStackTrace();
-					key = InsertableClientSSK.createRandom(pr.getNode().random, "index.yml"); //TODO leuchtkaefer it is probably wrong to publish in random key
+					Logger.error(this, "Failed to create insertable client ssk key");
+					//key = InsertableClientSSK.createRandom(pr.getNode().random, "index.yml"); //TODO leuchtkaefer it is probably wrong to publish in random key
 				} 
 			}
 			FileOutputStream fos = null;
 			if(newPrivKey) {
 				try {
 					File fPriv = new File(workingDir,PRIV_URI_FILENAME);
-					fos = new FileOutputStream(fPriv); //MULTIPLE IDENTITIES (+) leuchtkaefer
+					fos = new FileOutputStream(fPriv); 
 					OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
-					osw.write(privURI.toASCIIString());//MULTIPLE IDENTITIES (+) leuchtkaefer
+					osw.write(privURI.toASCIIString());
 					osw.close();
 					fos = null;
 				} catch (IOException e) {
@@ -100,9 +101,9 @@ class IdentityIndexURIs {
 			}
 			try {
 				File fPub = new File(workingDir,PUB_URI_FILENAME);
-				fos = new FileOutputStream(fPub);//MULTIPLE IDENTITIES (+) leuchtkaefer
+				fos = new FileOutputStream(fPub);
 				OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");
-				osw.write(pubURI.toASCIIString());//MULTIPLE IDENTITIES (+) leuchtkaefer
+				osw.write(pubURI.toASCIIString());
 				osw.close();
 				fos = null;
 			} catch (IOException e) {
