@@ -56,7 +56,7 @@ class IdentityIndexURIs {
 	
 	synchronized FreenetURI loadSSKURIs() { 
 		if(privURI == null) {	
-			File f = new File(workingDir,PRIV_URI_FILENAME); //MULTIPLE IDENTITIES (+) leuchtkaefer
+			File f = new File(workingDir,PRIV_URI_FILENAME); 
 			FileInputStream fis = null;
 			InsertableClientSSK privkey = null;
 			boolean newPrivKey = false;

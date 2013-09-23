@@ -1,3 +1,6 @@
+/* This code is part of Libray. It is 
+ * used by Curator plugin */
+
 package plugins.Library;
 
 
@@ -54,7 +57,7 @@ import freenet.support.io.LineReadingInputStream;
 
 
 /**
- * TODO write documentation
+ * Based on SpiderIndexUploader. Handles multiple indices 
  *
  * @author leuchtkaefer
  */
@@ -65,11 +68,12 @@ public class IdentityIndexUploader {
 		this.pr = pr;	
 		try {
 			setParentDir(routingKey);//parent directory for WoT identity
-			setWorkingDir(iURI.split("/")[1]);//working directory for each category (a different index)
+			String docName = iURI.split("/")[1]; 
+			setWorkingDir(docName);
+			identityIndexURIs = new IdentityIndexURIs(pr, this.workingDir, iURI);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		identityIndexURIs = new IdentityIndexURIs(pr, workingDir, iURI);
 	}
 
 	private void setParentDir(String routingKey) throws IOException {
@@ -168,24 +172,19 @@ public class IdentityIndexUploader {
 	
 	/** Merge from the Bucket chain to the on-disk idxDisk. */
 	protected void wrapMergeToDisk() {
-		System.out.println("LEUCHTKAEFER reach wrapMergeToDisk() ****************");
 		boolean first = true;
 		while(true) {
 		final Bucket data;
 		synchronized(freenetMergeSync) {
-			System.out.println("LEUCHTKAEFER inside syncronize wrapMergeToDisk() ****************");
 			if(pushBroken) {
 				Logger.error(this, "Pushing broken");
-				System.out.println("LEUCHTKAEFER PUSHBROKEN inside syncronize wrapMergeToDisk() ****************");
 				return;
 			}
 			if(first && diskMergeRunning) {
 				Logger.error(this, "Already running a handler!");
-				System.out.println("LEUCHTKAEFER already running handler inside syncronize wrapMergeToDisk() ****************");
 				return;
 			} else if((!first) && (!diskMergeRunning)) {
 				Logger.error(this, "Already running yet runningHandler is false?!");
-				System.out.println("LEUCHTKAEFER running yet runninnghandler false inside syncronize wrapMergeToDisk() ****************");
 				return;
 			}
 			first = false;
@@ -193,16 +192,13 @@ public class IdentityIndexUploader {
 				if(logMINOR) Logger.minor(this, "Nothing to handle");
 				diskMergeRunning = false;
 				freenetMergeSync.notifyAll();
-				System.out.println("LEUCHTKAEFER tomerge size 0 inside syncronize wrapMergeToDisk() ****************");
 				return;
 			}
-			System.out.println("Leuchtkaefer, toMergeToDisk size insider wrapMergeToDisk "+toMergeToDisk.size());
 			data = toMergeToDisk.remove(0);
 			freenetMergeSync.notifyAll();
 			diskMergeRunning = true;
 		}
 		try {
-			System.out.println("LEUCHTKAEFER inside TRY wrapMergeToDisk() ****************");
 			identityIndexURIs.loadSSKURIs();
 			mergeToDisk(data);
 		} catch (Throwable t) {
@@ -212,7 +208,6 @@ public class IdentityIndexUploader {
 				diskMergeRunning = false;
 				pushBroken = true;
 				freenetMergeSync.notifyAll();
-				System.out.println("LEUCHTKAEFER sth BAD happen inside syncronize wrapMergeToDisk() ****************");
 			}
 			if(t instanceof RuntimeException)
 				throw (RuntimeException)t;
@@ -235,12 +230,9 @@ public class IdentityIndexUploader {
 	
 	/** Merge a bucket of TermEntry's into an on-disk index. */
 	private void mergeToDisk(Bucket data) {
-		System.out.println("LEUCHTKAEFER reach mergeToDisk(Bucket data) ****************");
-		
 		boolean newIndex = false;
 		
 		if(idxDiskDir == null) {
-			System.out.println("LEUCHTKAEFER in mergeToDisk(Bucket data) idxDiskDir "+ idxDiskDir);
 			newIndex = true;
 			if(!createDiskDir()) return;
 		}
@@ -284,9 +276,7 @@ public class IdentityIndexUploader {
 			}
 			assert(idxDisk.ttab.isBare());
 			PushTask<ProtoIndex> task4 = new PushTask<ProtoIndex>(idxDisk);
-			System.out.println("LEUCHTKAEFER srlDisk...push(task4) is called");
 			srlDisk.push(task4);
-			System.out.println("LEUCHTKAEFER srlDisk...push(task4) returned");
 			long mergeEndTime = System.currentTimeMillis();
 			System.out.print(entriesAdded + " entries merged to disk in " + (mergeEndTime-mergeStartTime) + " ms, root at " + task4.meta + ", ");
 			// FileArchiver produces a String, which is a filename not including the prefix or suffix.
@@ -453,7 +443,6 @@ public class IdentityIndexUploader {
                     System.out.println("Merging data (on disk) in term "+key);
                 else
                     System.out.println("Adding new term to disk index:  "+key);
-                //System.out.println("handling " + key + ((tree == null)? " (new)":" (old)"));
                 if (tree == null) {
                     entry.setValue(tree = makeEntryTree(leafsrlDisk));
                 }
@@ -468,7 +457,6 @@ public class IdentityIndexUploader {
                 newtrees.remove(key);
                 assert(tree.isBare());
                 if(logMINOR) Logger.minor(this, "Updated: "+key+" : "+tree);
-                //System.out.println("handled " + key);
             }
         };
     }
@@ -541,10 +529,8 @@ public class IdentityIndexUploader {
 	private boolean createDiskDir() {
         dirNumber++;
         idxDiskDir = new File(workingDir, DISK_DIR_PREFIX + Integer.toString(dirNumber));
-        System.out.println("Created new disk dir for merging: "+idxDiskDir);
         if(!(idxDiskDir.mkdir() || idxDiskDir.isDirectory())) {
             Logger.error(this, "Unable to create new disk dir: "+idxDiskDir);
-            System.out.println("Unable to create new disk dir: "+idxDiskDir);
             synchronized(this) {
                 pushBroken = true;
                 return false;
@@ -572,7 +558,6 @@ public class IdentityIndexUploader {
             } else {
                 try {
                     PullTask<ProtoIndex> pull = new PullTask<ProtoIndex>(lastDiskIndexName);
-                    System.out.println("Pulling previous index "+lastDiskIndexName+" from disk so can update it.");
                     srlDisk.pull(pull);
                     System.out.println("Pulled previous index "+lastDiskIndexName+" from disk - updating...");
                     idxDisk = pull.data;
@@ -597,8 +582,6 @@ public class IdentityIndexUploader {
 	private ProtoIndexComponentSerialiser leafsrl;
 	
 	protected void mergeToFreenet(File diskDir) {
-		System.out.println("LEUCHTKAEFER reach mergeToFreenet(File diskDir) ****************");
-		System.out.println("Leuchtkaefer diskDir value for ProtoIndexSerializer "+ diskDir);
 		ProtoIndexSerialiser s = ProtoIndexSerialiser.forIndex(diskDir);
 		LiveArchiver<Map<String,Object>,SimpleProgress> archiver = 
 			(LiveArchiver<Map<String,Object>,SimpleProgress>)(s.getChildSerialiser());
@@ -645,9 +628,6 @@ public class IdentityIndexUploader {
 	 * @param diskDir The folder the on-disk index is stored in.
 	 */
 	protected void mergeToFreenet(ProtoIndex diskToMerge, File diskDir) {
-		System.out.println("LEUCHTKAEFER reach mergeToFreenet(diskToMerge, diskDir) *****"+ diskDir);
-		System.out.println("value of diskDir"+ (diskDir == null ? "Null" : diskDir.getAbsolutePath()));
-		System.out.println("value of diskToMerge"+ (diskToMerge == null ? "Null" : diskToMerge.getOwner()));
 		if(lastUploadURI == null) {
 			lastUploadURI = readURIFrom(new File(workingDir,LAST_URL_FILENAME));
 		}
@@ -986,7 +966,6 @@ public class IdentityIndexUploader {
 				}
 			}
 			toMergeToDisk.add(output);
-			System.out.println("LEUCHTKAEFER numbers of input in toMergeToDisk "+ toMergeToDisk.size()); 
 			if(pushBroken) {
 				if(toMergeToDisk.size() < PUSH_BROKEN_MAX_HANDLING_COUNT)
 					// We have written the data, it will be recovered after restart.
@@ -995,7 +974,7 @@ public class IdentityIndexUploader {
 					// Wait forever to prevent running out of disk space.
 					// Spider is single threaded.
 					// FIXME: Use an error return or a throwable to shut down Spider.
-					System.out.println("LEUCHTKAEFER I am going to enter wait forever loop in handlePushBuffer");
+					System.out.println("I am going to enter wait forever loop in handlePushBuffer");
 					while(true) {
 						try {
 							freenetMergeSync.wait();
@@ -1021,24 +1000,6 @@ public class IdentityIndexUploader {
 		};
 		pr.getNode().executor.execute(r, "Library: Handle data from Curator");
 	}
-
-	/*
-	public FreenetURI getPublicUSKURI(String identity) { 
-		return identityIndexURIs.getPublicUSK(String identity);
-	}
-
-	public void handleGetSpiderURI(PluginReplySender replysender) { //leuchtkaefer change this, actually i don't need it...
-		FreenetURI uri = getPublicUSKURI();
-		SimpleFieldSet sfs = new SimpleFieldSet(true);
-		sfs.putSingle("reply", "getSpiderURI");
-		sfs.putSingle("publicUSK", uri.toString(true, false));
-		try {
-			replysender.send(sfs);
-		} catch (PluginNotFoundException e) {
-			// Race condition, ignore.
-		}
-		
-	}*/
 
 
 
